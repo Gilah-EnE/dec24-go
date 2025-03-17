@@ -620,7 +620,7 @@ func signatureAnalysis(filename string, blockSize int) int {
 	defer func(file *os.File) {
 		err := file.Close()
 		if err != nil {
-			log.Fatal("failed to close file: %v", err)
+			log.Fatal(err)
 		}
 	}(file)
 

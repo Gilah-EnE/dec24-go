@@ -41,7 +41,7 @@ func meanFloats(array []float64) float64 {
 	var sum, mean float64
 
 	for _, value := range array {
-		sum += float64(value)
+		sum += value
 	}
 
 	mean = sum / float64(len(array))
@@ -53,7 +53,12 @@ func createFileCounter(filename string, blockSize int) (map[byte]int, int) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(file)
 
 	buffer := make([]byte, blockSize)
 	var readBytesCount int

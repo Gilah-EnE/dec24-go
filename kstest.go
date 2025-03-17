@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-func ksTest(totalCounter map[byte]int, readBytesCount int, blockSize int) (float64, int, int, float64, float64) {
+func ksTest(totalCounter map[byte]int, readBytesCount int) (float64, int, int, float64, float64) {
 
 	var empiricalCumSum float64
 	var theoreticalCumSum float64
@@ -20,11 +20,11 @@ func ksTest(totalCounter map[byte]int, readBytesCount int, blockSize int) (float
 
 	var ksDifferences []float64
 
-	for idx, _ := range empiricalCDF {
+	for idx := range empiricalCDF {
 		ksDifferences = append(ksDifferences, math.Abs(empiricalCDF[idx]-theoreticalCDF[idx]))
 	}
-	var ksStatistic float64 = ksDifferences[0]
-	var maxDiffPosition int = 0
+	ksStatistic := ksDifferences[0]
+	maxDiffPosition := 0
 
 	for idx, value := range ksDifferences {
 		if value > ksStatistic {

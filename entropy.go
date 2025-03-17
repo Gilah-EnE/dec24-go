@@ -4,7 +4,7 @@ import (
 	"math"
 )
 
-func entropyEstimation(totalCounter map[byte]int, readBytesCount int, blockSize int) float64 {
+func entropyEstimation(totalCounter map[byte]int, readBytesCount int) float64 {
 	var p, entropy float64
 
 	for i := 0; i < 256; i++ {

@@ -20,10 +20,6 @@ func autoCorrelation(filename string, blockSize int) float64 {
 		}
 	}(file)
 
-	if err != nil {
-		log.Fatal(err)
-	}
-
 	buffer := make([]byte, blockSize)
 	var totalAutocorr []float64
 
