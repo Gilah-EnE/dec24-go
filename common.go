@@ -7,6 +7,16 @@ import (
 	"os"
 )
 
+func countTrueBools(bools ...bool) int {
+	var trueCount int
+	for _, b := range bools {
+		if b {
+			trueCount++
+		}
+	}
+	return trueCount
+}
+
 func countBytes(data []byte) map[byte]int {
 	counter := make(map[byte]int)
 	for _, b := range data {

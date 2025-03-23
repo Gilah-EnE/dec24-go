@@ -1,5 +1,7 @@
 package main
 
+//#cgo LDFLAGS: ./lib
+
 import (
 	"encoding/hex"
 	"encoding/json"
@@ -602,7 +604,7 @@ func getSignatures() (SignatureMap, error) {
 }
 
 // performSignatureAnalysis analyzes a file for signatures
-func signatureAnalysis(filename string, blockSize int) int {
+func signatureAnalysis(fileName string, blockSize int) float64 {
 	signatures, err := getSignatures()
 	if err != nil {
 		log.Fatal(err)
@@ -613,7 +615,7 @@ func signatureAnalysis(filename string, blockSize int) int {
 		foundSignaturesTotal[sigType] = 0
 	}
 
-	file, err := os.Open(filename)
+	file, err := os.Open(fileName)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -655,13 +657,21 @@ func signatureAnalysis(filename string, blockSize int) int {
 		log.Fatal(err)
 	}
 
-	baseFileName := filepath.Base(filename)
+	baseFileName := filepath.Base(fileName)
 	outputFileName := baseFileName + "_signatures_total.txt"
-	content := fmt.Sprintf("%s\t%d\t%v", filename, sum(foundSignaturesTotal), string(resultsJSON))
+	content := fmt.Sprintf("%s\t%d\t%v", fileName, sum(foundSignaturesTotal), string(resultsJSON))
 	err = os.WriteFile(outputFileName, []byte(content), 0644)
 	if err != nil {
 		log.Fatal(err)
 	}
 	fmt.Print("                                        \r")
-	return sum(foundSignaturesTotal)
+
+	stat, err := os.Stat(fileName)
+	if err != nil {
+		fmt.Println(err)
+	}
+
+	fileSize := float64(stat.Size()) / 1048576.0
+
+	return float64(sum(foundSignaturesTotal)) / fileSize
 }
