@@ -4,15 +4,13 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"math"
 	"os"
 	"path/filepath"
 	"slices"
 	"strings"
-	"time"
 )
 
-func performFileAnalysis() {
+func main() {
 	if len(os.Args) <= 1 {
 		log.Fatalf("Использование: %s <файл>\n", os.Args[0])
 	} else {
@@ -25,7 +23,7 @@ func performFileAnalysis() {
 		var signatureThreshold = 150.0
 		var entropyThreshold = 7.95
 
-		var logFile = fmt.Sprintf("%s.log", fileName)
+		var logFile = fmt.Sprintf("%s.enclog", fileName)
 		logFileHandle, err := os.OpenFile(logFile, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
 			log.Fatalf("Не удалось открыть файл журнала: %s", err)
@@ -51,7 +49,7 @@ func performFileAnalysis() {
 			fileErrorLogger.Fatalf("Оптимизированный файл %s не найден.", optimizedFileName)
 		}
 
-		fmt.Printf("Код поиска шифрования разделов сырого образа диска, версия 2. Имя файла: %s, размер блока: %d байтов.\n", fileName, blockSize)
+		fmt.Printf("Код поиска шифрования разделов сырого образа диска, версия 2 (одиночный режим, проверка образов). Имя файла: %s, размер блока: %d байтов.\n", fileName, blockSize)
 
 		autocorrResult := autoCorrelation(optimizedFileName, blockSize)
 		fileNormalLogger.Printf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
@@ -97,16 +95,5 @@ func performFileAnalysis() {
 				fileNormalLogger.Println("Этап 1: Шифрования не обнаружено. Файловая система с высокой долей вероятности содержит незашифрованные файлы. Завершение работы программы.")
 			}
 		}
-	}
-}
-
-func benchmark(fileName string) {
-	for i := 5; i <= 25; i++ {
-		blockSize := int(math.Pow(2.0, float64(i)))
-		start := time.Now()
-		// counter, total := createFileCounter(fileName, blockSize)
-		autocorrResult := autoCorrelation(fileName, blockSize)
-		elapsed := time.Since(start)
-		log.Printf("Result %f, BS: %d, time %s", autocorrResult, blockSize, elapsed)
 	}
 }

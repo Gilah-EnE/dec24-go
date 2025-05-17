@@ -24,14 +24,14 @@ func performCompression(execCommand string) float64 {
 
 func compressionTest(fileName string) float64 {
 	var gzipCompression, lz4Compression, bz2Compression, zstdCompression, xzCompression float64
-	//var gzipOutput, lz4Output, bz2Output, zstdOutput, xzOutput []byte
+	// var gzipOutput, lz4Output, bz2Output, zstdOutput, xzOutput []byte
 	var gzipExec, lz4Exec, bz2Exec, zstdExec, xzExec string
 
-	gzipExec = fmt.Sprintf("pigz < %s | wc -c", fileName)
-	lz4Exec = fmt.Sprintf("lz4 < %s | wc -c", fileName)
-	bz2Exec = fmt.Sprintf("lbzip2 < %s | wc -c", fileName)
-	zstdExec = fmt.Sprintf("zstd < %s | wc -c", fileName)
-	xzExec = fmt.Sprintf("pixz < %s | wc -c", fileName)
+	gzipExec = fmt.Sprintf("pigz < \"%s\" | wc -c", fileName)
+	lz4Exec = fmt.Sprintf("lz4 < \"%s\" | wc -c", fileName)
+	bz2Exec = fmt.Sprintf("lbzip2 < \"%s\" | wc -c", fileName)
+	zstdExec = fmt.Sprintf("zstd < \"%s\" | wc -c", fileName)
+	xzExec = fmt.Sprintf("pixz < \"%s\" | wc -c", fileName)
 
 	stat, err := os.Stat(fileName)
 	if err != nil {

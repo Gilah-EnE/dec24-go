@@ -53,7 +53,10 @@ func autoCorrelation(filename string, blockSize int) float64 {
 		}
 
 		for lag := 1; lag < maxLag; lag++ {
-			correlation, _ := stats.Correlation(floatBuffer[lag:], floatBuffer[:len(floatBuffer)-lag])
+			correlation, autocorrErr := stats.Correlation(floatBuffer[lag:], floatBuffer[:len(floatBuffer)-lag])
+			if autocorrErr != nil {
+				log.Println("Autocorrelation calc error: ", autocorrErr)
+			}
 			results = append(results, math.Abs(correlation))
 		}
 
@@ -61,7 +64,8 @@ func autoCorrelation(filename string, blockSize int) float64 {
 	}
 	std, err := stats.StandardDeviation(totalAutocorr)
 	if err != nil {
-		log.Fatal(err)
+		log.Println("Standard deviation calc error: ", err)
+		return 0.0
 	}
 	return std
 }

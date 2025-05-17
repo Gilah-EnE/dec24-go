@@ -1,7 +1,5 @@
 package main
 
-//#cgo LDFLAGS: ./lib
-
 import (
 	"encoding/hex"
 	"encoding/json"
@@ -675,3 +673,7 @@ func signatureAnalysis(fileName string, blockSize int) float64 {
 
 	return float64(sum(foundSignaturesTotal)) / fileSize
 }
+
+// func main() {
+// 	fmt.Println(libmagicAnalysis("/dataset/DES_ukr_transl.doc"))
+// }
