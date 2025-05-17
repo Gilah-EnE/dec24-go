@@ -5,7 +5,7 @@ import (
 )
 
 func libmagicAnalysis(fileName string) string {
-	cookie := magic.Open(magic.MAGIC_NONE)
+	cookie := magic.Open(magic.MAGIC_MIME_TYPE)
 	defer magic.Close(cookie)
 	defaultDir := magic.GetDefaultDir() + "/magic"
 	magic.Load(cookie, defaultDir)

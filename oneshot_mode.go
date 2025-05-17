@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"math"
 	"os"
 	"path/filepath"
 	"slices"
@@ -42,6 +43,15 @@ func main() {
 		fileExtension := filepath.Ext(fileName)
 		filePath := strings.TrimSuffix(fileName, fileExtension)
 
+		fileStat, fileStatErr := os.Stat(fileName)
+		if fileStatErr != nil {
+			log.Fatalf("Ошибка открытия файла: %s", fileStatErr)
+		}
+		fileSize := fileStat.Size()
+
+		var minCounts int64 = 16
+		var autocorrBlockSize = int(math.Min(1048576, math.Pow(2, math.Floor(math.Log2(float64(fileSize/minCounts))))))
+
 		var optimizedFileName = fmt.Sprintf("%s_opt%s", filePath, fileExtension)
 
 		if _, err := os.Stat(optimizedFileName); errors.Is(err, os.ErrNotExist) {
@@ -49,9 +59,9 @@ func main() {
 			fileErrorLogger.Fatalf("Оптимизированный файл %s не найден.", optimizedFileName)
 		}
 
-		fmt.Printf("Код поиска шифрования разделов сырого образа диска, версия 2 (одиночный режим, проверка образов). Имя файла: %s, размер блока: %d байтов.\n", fileName, blockSize)
+		fmt.Printf("Код поиска шифрования разделов сырого образа диска, версия 2 (одиночный режим, проверка образов). Имя файла: %s, размер блока: %d байтов, размер блока для теста автокорреляции: %d байтов.\n", fileName, blockSize, autocorrBlockSize)
 
-		autocorrResult := autoCorrelation(optimizedFileName, blockSize)
+		autocorrResult := autoCorrelation(optimizedFileName, autocorrBlockSize)
 		fileNormalLogger.Printf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
 		partedResult := partedCheck(fileName)
 		fileNormalLogger.Printf("Обнаруженная файловая система: %s\n", partedResult)
