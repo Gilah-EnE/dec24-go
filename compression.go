@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -40,19 +39,19 @@ func compressionTest(fileName string) float64 {
 
 	fileSize := float64(stat.Size())
 
-	log.Println("Начало сжатия GZip")
+	// log.Println("Начало сжатия GZip")
 	gzipCompression = fileSize / performCompression(gzipExec)
-	log.Println("Начало сжатия LZ4")
+	// log.Println("Начало сжатия LZ4")
 	lz4Compression = fileSize / performCompression(lz4Exec)
-	log.Println("Начало сжатия BZ2")
+	// log.Println("Начало сжатия BZ2")
 	bz2Compression = fileSize / performCompression(bz2Exec)
-	log.Println("Начало сжатия Zstd")
+	// log.Println("Начало сжатия Zstd")
 	zstdCompression = fileSize / performCompression(zstdExec)
-	log.Println("Начало сжатия XZ")
+	// log.Println("Начало сжатия XZ")
 	xzCompression = fileSize / performCompression(xzExec)
 
 	avgCompression := (gzipCompression + lz4Compression + bz2Compression + zstdCompression + xzCompression) / 5
-	log.Printf("Конец теста компрессии. GZIP: %f, LZ4: %f, BZ2: %f, Zstd: %f, XZ: %f", gzipCompression, lz4Compression, bz2Compression, zstdCompression, xzCompression)
+	// log.Printf("Конец теста компрессии. GZIP: %f, LZ4: %f, BZ2: %f, Zstd: %f, XZ: %f", gzipCompression, lz4Compression, bz2Compression, zstdCompression, xzCompression)
 
 	return avgCompression
 }

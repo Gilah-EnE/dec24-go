@@ -6,9 +6,11 @@ import (
 	"log"
 	"math"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"slices"
 	"strings"
+	"time"
 )
 
 func main() {
@@ -54,14 +56,18 @@ func main() {
 
 		var optimizedFileName = fmt.Sprintf("%s_opt%s", filePath, fileExtension)
 
-		if _, err := os.Stat(optimizedFileName); errors.Is(err, os.ErrNotExist) {
+		if _, optFileOpenErr := os.Stat(optimizedFileName); errors.Is(optFileOpenErr, os.ErrNotExist) {
 			consoleErrorLogger.Printf("Оптимизированный файл %s не найден.", optimizedFileName)
-			fileErrorLogger.Fatalf("Оптимизированный файл %s не найден.", optimizedFileName)
+			result, fileOptimizationErr := exec.Command("python3", "prepare.py", "optimize", fileName).Output()
+			if fileOptimizationErr != nil {
+				fmt.Printf("Ошибка оптимизации файла: %s", result)
+			}
 		}
 
 		fmt.Printf("Код поиска шифрования разделов сырого образа диска, версия 2 (одиночный режим, проверка образов). Имя файла: %s, размер блока: %d байтов, размер блока для теста автокорреляции: %d байтов.\n", fileName, blockSize, autocorrBlockSize)
-
+		autocorrStartTime := time.Now()
 		autocorrResult := autoCorrelation(optimizedFileName, autocorrBlockSize)
+		fmt.Printf("Время теста автокорреляции: %.15f \n", time.Since(autocorrStartTime).Seconds())
 		fileNormalLogger.Printf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
 		partedResult := partedCheck(fileName)
 		fileNormalLogger.Printf("Обнаруженная файловая система: %s\n", partedResult)
@@ -72,14 +78,24 @@ func main() {
 
 		if contains {
 			fileNormalLogger.Println("Этап 1: Шифрования не обнаружено. Переход на Этап 2.")
+			counterStartTime := time.Now()
 			counter, total := createFileCounter(optimizedFileName, blockSize)
+			fmt.Printf("Время набора стат. модели: %.15f \n", time.Since(counterStartTime).Seconds())
+			ksStartTime := time.Now()
 			ksStatistic, maxDiffPosition, readBytesCount, _, _ := ksTest(counter, total)
+			fmt.Printf("Время теста К-С: %.15f \n", time.Since(ksStartTime).Seconds())
 			fileNormalLogger.Printf("Тест Колмогорова-Смирнова: максимальное отклонение: %f (реф. значение %f) в позиции %d, прочитано %d байтов.\n", ksStatistic, ksTestThreshold, maxDiffPosition, readBytesCount)
+			compressionStartTime := time.Now()
 			compressionStat := compressionTest(optimizedFileName)
+			fmt.Printf("Время теста сжатия: %.15f \n", time.Since(compressionStartTime).Seconds())
 			fileNormalLogger.Printf("Средний коэффициент сжатия: %f, реф. значение %f\n", compressionStat, compressionThreshold)
+			signatureStartTime := time.Now()
 			signatureStat := signatureAnalysis(optimizedFileName, blockSize)
+			fmt.Printf("Время теста сигнатур: %.15f \n", time.Since(signatureStartTime).Seconds())
 			fileNormalLogger.Printf("Удельное количество сигнатур на мегабайт: %f, реф. значение %f\n", signatureStat, signatureThreshold)
+			entropyStartTime := time.Now()
 			entropyStat := entropyEstimation(counter, total)
+			fmt.Printf("Время теста энтропии: %.15f \n", time.Since(entropyStartTime).Seconds())
 			fileNormalLogger.Printf("Оценочная информационная энтропия файла: %f, реф. значение %f\n", entropyStat, entropyThreshold)
 
 			var autocorrTrue = autocorrResult <= autocorrThreshold

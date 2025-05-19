@@ -61,10 +61,10 @@ func main() {
 				var optimizedFileName = fmt.Sprintf("%s_opt%s", filePath, fileExtension)
 
 				if _, optFileOpenErr := os.Stat(optimizedFileName); errors.Is(optFileOpenErr, os.ErrNotExist) {
-					fileErrorLogger.Printf("Оптимизированный файл %s не найден.", optimizedFileName)
+					consoleErrorLogger.Printf("Оптимизированный файл %s не найден.", optimizedFileName)
 					result, fileOptimizationErr := exec.Command("python3", "prepare.py", "optimize", fileName).Output()
 					if fileOptimizationErr != nil {
-						fmt.Printf("Ошибка оптимизации файлв: %s", result)
+						fmt.Printf("Ошибка оптимизации файла: %s", result)
 					}
 				}
 

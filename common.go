@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"fmt"
 	"io"
 	"log"
@@ -85,17 +86,19 @@ func createFileCounter(filename string, blockSize int) (map[byte]int, int) {
 	}
 
 	fsize := int(fileStat.Size())
-
 	if fsize < blockSize {
-		blockSize = 2 ^ (int(math.Floor(math.Log2(float64(fsize)))))
+		// Use bit shifting for power of 2, not XOR
+		blockSize = 1 << int(math.Floor(math.Log2(float64(fsize))))
 	}
 
+	// Create a buffered reader
+	reader := bufio.NewReaderSize(file, blockSize)
 	buffer := make([]byte, blockSize)
 	var readBytesCount int
 	totalCounter := map[byte]int{}
 
 	for {
-		bytesRead, err := file.Read(buffer)
+		bytesRead, err := reader.Read(buffer)
 		if err == io.EOF || bytesRead == 0 {
 			break
 		} else if err != nil {
@@ -103,16 +106,15 @@ func createFileCounter(filename string, blockSize int) (map[byte]int, int) {
 		}
 
 		readBytesCount += bytesRead
+		fmt.Printf("%.1f MB\r", float32(readBytesCount)/1048576)
 
-		fmt.Printf("%.1f \r", float32(readBytesCount)/1048576)
-
-		if len(buffer) > bytesRead {
-			break
-		}
-
-		blockBytesCounter := countBytes(buffer)
+		// Only process the bytes that were actually read
+		blockBytesCounter := countBytes(buffer[:bytesRead])
 		totalCounter = mergeCounterLists(totalCounter, blockBytesCounter)
 	}
+
+	// Print newline after progress indicator
+	fmt.Println()
 	return totalCounter, readBytesCount
 }
 
