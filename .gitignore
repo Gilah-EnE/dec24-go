@@ -136,3 +136,4 @@ fabric.properties
 main
 *_signatures_total.txt
 *.img
+*.pyc
