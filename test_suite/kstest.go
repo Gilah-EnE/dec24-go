@@ -1,10 +1,10 @@
-package main
+package test_suite
 
 import (
 	"math"
 )
 
-func ksTest(totalCounter map[byte]int, readBytesCount int) (float64, int, int, float64, float64) {
+func KsTest(totalCounter map[byte]int, readBytesCount int) (float64, int, int, float64, float64) {
 
 	var empiricalCumSum float64
 	var theoreticalCumSum float64

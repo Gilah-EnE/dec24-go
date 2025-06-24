@@ -1,4 +1,4 @@
-package main
+package test_suite
 
 import (
 	"bufio"
@@ -17,7 +17,7 @@ type ByteCounter struct {
 	BytesRead int
 }
 
-func countTrueBools(bools ...bool) int {
+func CountTrueBools(bools ...bool) int {
 	var trueCount int
 	for _, b := range bools {
 		if b {
@@ -68,7 +68,7 @@ func meanFloats(array []float64) float64 {
 	return mean
 }
 
-func createFileCounter(filename string, blockSize int) (map[byte]int, int) {
+func CreateFileCounter(filename string, blockSize int) (map[byte]int, int) {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)
@@ -118,7 +118,7 @@ func createFileCounter(filename string, blockSize int) (map[byte]int, int) {
 	return totalCounter, readBytesCount
 }
 
-func createFileCounterGoro(filename string, blockSize int, resultChannel chan ByteCounter, wg *sync.WaitGroup) {
+func CreateFileCounterGoro(filename string, blockSize int, resultChannel chan ByteCounter, wg *sync.WaitGroup) {
 	defer wg.Done()
 	start := time.Now()
 	file, err := os.Open(filename)

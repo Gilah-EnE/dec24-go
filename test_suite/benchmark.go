@@ -1,4 +1,4 @@
-package main
+package test_suite
 
 import (
 	"errors"
@@ -53,9 +53,9 @@ func performFileAnalysis() {
 
 		fmt.Printf("Код поиска шифрования разделов сырого образа диска, версия 2. Имя файла: %s, размер блока: %d байтов.\n", fileName, blockSize)
 
-		autocorrResult := autoCorrelation(optimizedFileName, blockSize)
+		autocorrResult := AutoCorrelation(optimizedFileName, blockSize)
 		fileNormalLogger.Printf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
-		partedResult := partedCheck(fileName)
+		partedResult := PartedCheck(fileName)
 		fileNormalLogger.Printf("Обнаруженная файловая система: %s\n", partedResult)
 
 		noFSResults := []string{"", "unknown"}
@@ -64,14 +64,14 @@ func performFileAnalysis() {
 
 		if contains {
 			fileNormalLogger.Println("Этап 1: Шифрования не обнаружено. Переход на Этап 2.")
-			counter, total := createFileCounter(optimizedFileName, blockSize)
-			ksStatistic, maxDiffPosition, readBytesCount, _, _ := ksTest(counter, total)
+			counter, total := CreateFileCounter(optimizedFileName, blockSize)
+			ksStatistic, maxDiffPosition, readBytesCount, _, _ := KsTest(counter, total)
 			fileNormalLogger.Printf("Тест Колмогорова-Смирнова: максимальное отклонение: %f (реф. значение %f) в позиции %d, прочитано %d байтов.\n", ksStatistic, ksTestThreshold, maxDiffPosition, readBytesCount)
-			compressionStat := compressionTest(optimizedFileName)
+			compressionStat := CompressionTest(optimizedFileName)
 			fileNormalLogger.Printf("Средний коэффициент сжатия: %f, реф. значение %f\n", compressionStat, compressionThreshold)
-			signatureStat := signatureAnalysis(optimizedFileName, blockSize)
+			signatureStat := SignatureAnalysis(optimizedFileName, blockSize)
 			fileNormalLogger.Printf("Удельное количество сигнатур на мегабайт: %f, реф. значение %f\n", signatureStat, signatureThreshold)
-			entropyStat := entropyEstimation(counter, total)
+			entropyStat := EntropyEstimation(counter, total)
 			fileNormalLogger.Printf("Оценочная информационная энтропия файла: %f, реф. значение %f\n", entropyStat, entropyThreshold)
 
 			var autocorrTrue = autocorrResult <= autocorrThreshold
@@ -80,7 +80,7 @@ func performFileAnalysis() {
 			var signatureTrue = signatureStat <= signatureThreshold
 			var entropyTrue = entropyStat >= entropyThreshold
 
-			var finalResult = countTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
+			var finalResult = CountTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
 
 			if finalResult <= 2 {
 				fileNormalLogger.Printf("Этап 2: Количество положительных результатов %d <= 2, шифрования не обнаружено. Завершение работы программы.", finalResult)
@@ -105,7 +105,7 @@ func benchmark(fileName string) {
 		blockSize := int(math.Pow(2.0, float64(i)))
 		start := time.Now()
 		// counter, total := createFileCounter(fileName, blockSize)
-		autocorrResult := autoCorrelation(fileName, blockSize)
+		autocorrResult := AutoCorrelation(fileName, blockSize)
 		elapsed := time.Since(start)
 		log.Printf("Result %f, BS: %d, time %s", autocorrResult, blockSize, elapsed)
 	}

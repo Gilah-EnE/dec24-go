@@ -1,4 +1,4 @@
-package main
+package test_suite
 
 import (
 	"fmt"
@@ -21,7 +21,7 @@ func performCompression(execCommand string) float64 {
 	return float64(gzipCompression)
 }
 
-func compressionTest(fileName string) float64 {
+func CompressionTest(fileName string) float64 {
 	var gzipCompression, lz4Compression, bz2Compression, zstdCompression, xzCompression float64
 	// var gzipOutput, lz4Output, bz2Output, zstdOutput, xzOutput []byte
 	var gzipExec, lz4Exec, bz2Exec, zstdExec, xzExec string

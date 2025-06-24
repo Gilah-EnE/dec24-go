@@ -1,11 +1,11 @@
-package main
+package test_suite
 
 import (
 	"os/exec"
 	"strings"
 )
 
-func partedCheck(fileName string) string {
+func PartedCheck(fileName string) string {
 	result, _ := exec.Command("./parted", "-m", fileName, "print").CombinedOutput()
 	resultText := string(result)
 	if strings.Contains(resultText, "Error") {

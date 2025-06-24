@@ -1,10 +1,10 @@
-package main
+package test_suite
 
 import (
 	"math"
 )
 
-func chiSqTest(totalCounter map[byte]int, readBytesCount int) float64 {
+func ChiSqTest(totalCounter map[byte]int, readBytesCount int) float64 {
 	theoreticalDistribution := map[byte]float64{}
 	for i := 0; i < 256; i++ {
 		theoreticalDistribution[byte(i)] = float64(readBytesCount) / 256

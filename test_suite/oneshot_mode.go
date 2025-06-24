@@ -1,4 +1,4 @@
-package main
+package test_suite
 
 import (
 	"errors"
@@ -13,7 +13,7 @@ import (
 	"time"
 )
 
-func main() {
+func oneshotMode() {
 	if len(os.Args) <= 1 {
 		log.Fatalf("Использование: %s <файл>\n", os.Args[0])
 	} else {
@@ -66,10 +66,10 @@ func main() {
 
 		fmt.Printf("Код поиска шифрования разделов сырого образа диска, версия 2 (одиночный режим, проверка образов). Имя файла: %s, размер блока: %d байтов, размер блока для теста автокорреляции: %d байтов.\n", fileName, blockSize, autocorrBlockSize)
 		autocorrStartTime := time.Now()
-		autocorrResult := autoCorrelation(optimizedFileName, autocorrBlockSize)
+		autocorrResult := AutoCorrelation(optimizedFileName, autocorrBlockSize)
 		fmt.Printf("Время теста автокорреляции: %.15f \n", time.Since(autocorrStartTime).Seconds())
 		fileNormalLogger.Printf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
-		partedResult := partedCheck(fileName)
+		partedResult := PartedCheck(fileName)
 		fileNormalLogger.Printf("Обнаруженная файловая система: %s\n", partedResult)
 
 		noFSResults := []string{"", "unknown"}
@@ -79,22 +79,22 @@ func main() {
 		if contains {
 			fileNormalLogger.Println("Этап 1: Шифрования не обнаружено. Переход на Этап 2.")
 			counterStartTime := time.Now()
-			counter, total := createFileCounter(optimizedFileName, blockSize)
+			counter, total := CreateFileCounter(optimizedFileName, blockSize)
 			fmt.Printf("Время набора стат. модели: %.15f \n", time.Since(counterStartTime).Seconds())
 			ksStartTime := time.Now()
-			ksStatistic, maxDiffPosition, readBytesCount, _, _ := ksTest(counter, total)
+			ksStatistic, maxDiffPosition, readBytesCount, _, _ := KsTest(counter, total)
 			fmt.Printf("Время теста К-С: %.15f \n", time.Since(ksStartTime).Seconds())
 			fileNormalLogger.Printf("Тест Колмогорова-Смирнова: максимальное отклонение: %f (реф. значение %f) в позиции %d, прочитано %d байтов.\n", ksStatistic, ksTestThreshold, maxDiffPosition, readBytesCount)
 			compressionStartTime := time.Now()
-			compressionStat := compressionTest(optimizedFileName)
+			compressionStat := CompressionTest(optimizedFileName)
 			fmt.Printf("Время теста сжатия: %.15f \n", time.Since(compressionStartTime).Seconds())
 			fileNormalLogger.Printf("Средний коэффициент сжатия: %f, реф. значение %f\n", compressionStat, compressionThreshold)
 			signatureStartTime := time.Now()
-			signatureStat := signatureAnalysis(optimizedFileName, blockSize)
+			signatureStat := SignatureAnalysis(optimizedFileName, blockSize)
 			fmt.Printf("Время теста сигнатур: %.15f \n", time.Since(signatureStartTime).Seconds())
 			fileNormalLogger.Printf("Удельное количество сигнатур на мегабайт: %f, реф. значение %f\n", signatureStat, signatureThreshold)
 			entropyStartTime := time.Now()
-			entropyStat := entropyEstimation(counter, total)
+			entropyStat := EntropyEstimation(counter, total)
 			fmt.Printf("Время теста энтропии: %.15f \n", time.Since(entropyStartTime).Seconds())
 			fileNormalLogger.Printf("Оценочная информационная энтропия файла: %f, реф. значение %f\n", entropyStat, entropyThreshold)
 
@@ -104,7 +104,7 @@ func main() {
 			var signatureTrue = signatureStat <= signatureThreshold
 			var entropyTrue = entropyStat >= entropyThreshold
 
-			var finalResult = countTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
+			var finalResult = CountTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
 
 			if finalResult <= 2 {
 				fileNormalLogger.Printf("Этап 2: Количество положительных результатов %d <= 2, шифрования не обнаружено. Завершение работы программы.", finalResult)

@@ -1,4 +1,4 @@
-package main
+package test_suite
 
 import (
 	"errors"
@@ -12,7 +12,7 @@ import (
 	"strings"
 )
 
-func main() {
+func batchMode() {
 	if len(os.Args) <= 1 {
 		log.Fatalf("Использование: %s <путь к каталогу>\n", os.Args[0])
 	} else {
@@ -70,9 +70,9 @@ func main() {
 
 				fmt.Printf("Код поиска шифрования разделов сырого образа диска, версия 2 (пакетный режим, проверка файлов. Имя файла: %s, размер блока: %d байтов, размер блока для теста автокорреляции: %d байтов.\n", fileName, blockSize, autocorrBlockSize)
 
-				autocorrResult := autoCorrelation(optimizedFileName, autocorrBlockSize)
+				autocorrResult := AutoCorrelation(optimizedFileName, autocorrBlockSize)
 				fileNormalLogger.Printf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
-				magicResult := libmagicAnalysis(fileName)
+				magicResult := LibmagicAnalysis(fileName)
 				fileNormalLogger.Printf("Тип файла: %s\n", magicResult)
 
 				// noFSResults := []string{"", "unknown"}
@@ -162,14 +162,14 @@ func main() {
 					fileNormalLogger.Printf("Этап 1: Тестируемый файл %s был предварительно сжат или является сжатым архивом.", fileName)
 				} else {
 					fileNormalLogger.Println("Этап 1: Предварительного сжатия не обнаружено. Переход на Этап 2.")
-					counter, total := createFileCounter(optimizedFileName, blockSize)
-					ksStatistic, maxDiffPosition, readBytesCount, _, _ := ksTest(counter, total)
+					counter, total := CreateFileCounter(optimizedFileName, blockSize)
+					ksStatistic, maxDiffPosition, readBytesCount, _, _ := KsTest(counter, total)
 					fileNormalLogger.Printf("Тест Колмогорова-Смирнова: максимальное отклонение: %f (реф. значение %f) в позиции %d, прочитано %d байтов.\n", ksStatistic, ksTestThreshold, maxDiffPosition, readBytesCount)
-					compressionStat := compressionTest(optimizedFileName)
+					compressionStat := CompressionTest(optimizedFileName)
 					fileNormalLogger.Printf("Средний коэффициент сжатия: %f, реф. значение %f\n", compressionStat, compressionThreshold)
-					signatureStat := signatureAnalysis(optimizedFileName, blockSize)
+					signatureStat := SignatureAnalysis(optimizedFileName, blockSize)
 					fileNormalLogger.Printf("Удельное количество сигнатур на мегабайт: %f, реф. значение %f\n", signatureStat, signatureThreshold)
-					entropyStat := entropyEstimation(counter, total)
+					entropyStat := EntropyEstimation(counter, total)
 					fileNormalLogger.Printf("Оценочная информационная энтропия файла: %f, реф. значение %f\n", entropyStat, entropyThreshold)
 
 					var autocorrTrue = autocorrResult <= autocorrThreshold
@@ -178,7 +178,7 @@ func main() {
 					var signatureTrue = signatureStat <= signatureThreshold
 					var entropyTrue = entropyStat >= entropyThreshold
 
-					var finalResult = countTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
+					var finalResult = CountTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
 
 					if finalResult <= 2 {
 						fileNormalLogger.Printf("Этап 2: Количество положительных результатов %d <= 2, шифрования не обнаружено. Завершение работы программы.", finalResult)

@@ -1,4 +1,4 @@
-package main
+package test_suite
 
 import (
 	"fmt"
@@ -9,7 +9,7 @@ import (
 	"github.com/montanaflynn/stats"
 )
 
-func autoCorrelation(filename string, blockSize int) float64 {
+func AutoCorrelation(filename string, blockSize int) float64 {
 	file, err := os.Open(filename)
 	if err != nil {
 		log.Fatal(err)

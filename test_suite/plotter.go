@@ -1,4 +1,4 @@
-package main
+package test_suite
 
 import (
 	"encoding/json"
@@ -163,8 +163,8 @@ func createNetCDFFile(fileName1 string, fileName2 string, wgroup *sync.WaitGroup
 	autoCorrelationResultChannel := make(chan AutoCorrelationResult, 2)
 
 	if performCounting {
-		go createFileCounterGoro(fileName1, 1048576, counterResultChannel, &wg)
-		go createFileCounterGoro(fileName2, 1048576, counterResultChannel, &wg)
+		go CreateFileCounterGoro(fileName1, 1048576, counterResultChannel, &wg)
+		go CreateFileCounterGoro(fileName2, 1048576, counterResultChannel, &wg)
 	}
 	if performAutocorr {
 		go autoCorrGoro(fileName1, 8192, autoCorrelationResultChannel, &wg)

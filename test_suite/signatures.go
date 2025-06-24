@@ -1,4 +1,4 @@
-package main
+package test_suite
 
 import (
 	"encoding/hex"
@@ -15,7 +15,7 @@ import (
 type SignatureMap map[string]*rure.Regex
 
 // findBytesPattern counts the number of matches in the given data
-func findBytesPattern(data string, regex *rure.Regex) int {
+func FindBytesPattern(data string, regex *rure.Regex) int {
 	matches := regex.FindAll(data)
 	// FindAll returns two positions for start and end for each match, we need only the start position
 	return len(matches) / 2
@@ -601,8 +601,7 @@ func getSignatures() (SignatureMap, error) {
 	return signatures, nil
 }
 
-// performSignatureAnalysis analyzes a file for signatures
-func signatureAnalysis(fileName string, blockSize int) float64 {
+func SignatureAnalysis(fileName string, blockSize int) float64 {
 	signatures, err := getSignatures()
 	if err != nil {
 		log.Fatal(err)
@@ -673,7 +672,3 @@ func signatureAnalysis(fileName string, blockSize int) float64 {
 
 	return float64(sum(foundSignaturesTotal)) / fileSize
 }
-
-// func main() {
-// 	fmt.Println(libmagicAnalysis("/dataset/DES_ukr_transl.doc"))
-// }

@@ -3,6 +3,7 @@ package main
 import (
 	"errors"
 	"fmt"
+	"github.com/Gilah-EnE/dec24-go/test_suite"
 	"github.com/mappu/miqt/qt"
 	"log"
 	"os"
@@ -254,20 +255,20 @@ func main() {
 				var ksStatistic, compressionStat, signatureStat, entropyStat float64
 				var maxDiffPosition, readBytesCount int
 
-				autocorrResult := autoCorrelation(optimizedfname, blockSize)
-				partedResult := partedCheck(fileName)
+				autocorrResult := test_suite.AutoCorrelation(optimizedfname, blockSize)
+				partedResult := test_suite.PartedCheck(fileName)
 				noFSResults := []string{"", "unknown"}
 				contains := slices.Contains(noFSResults, partedResult)
 				var encryptionResult = NoEncryption
 
 				if contains {
 					part1Result = "Этап 1: Шифрования не обнаружено. Переход на Этап 2."
-					counter, total := createFileCounter(optimizedfname, blockSize)
-					ksStatistic, maxDiffPosition, readBytesCount, _, _ = ksTest(counter, total)
+					counter, total := test_suite.CreateFileCounter(optimizedfname, blockSize)
+					ksStatistic, maxDiffPosition, readBytesCount, _, _ = test_suite.KsTest(counter, total)
 
-					compressionStat = compressionTest(optimizedfname)
-					signatureStat = signatureAnalysis(optimizedfname, blockSize)
-					entropyStat = entropyEstimation(counter, total)
+					compressionStat = test_suite.CompressionTest(optimizedfname)
+					signatureStat = test_suite.SignatureAnalysis(optimizedfname, blockSize)
+					entropyStat = test_suite.EntropyEstimation(counter, total)
 
 					var autocorrTrue = autocorrResult <= autocorrThreshold
 					var ksTrue = ksStatistic <= ksTestThreshold
@@ -275,7 +276,7 @@ func main() {
 					var signatureTrue = signatureStat <= signatureThreshold
 					var entropyTrue = entropyStat >= entropyThreshold
 
-					var finalResult = countTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
+					var finalResult = test_suite.CountTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
 
 					if finalResult <= 2 {
 						part2Result = fmt.Sprintf("Этап 2: Количество положительных результатов %d <= 2, шифрования не обнаружено. Завершение работы программы.", finalResult)
@@ -447,8 +448,8 @@ func main() {
 								var ksStatistic, compressionStat, signatureStat, entropyStat float64
 								var maxDiffPosition, readBytesCount int
 
-								autocorrResult := autoCorrelation(optimizedfname, blockSize)
-								partedResult := partedCheck(fileName)
+								autocorrResult := test_suite.AutoCorrelation(optimizedfname, blockSize)
+								partedResult := test_suite.PartedCheck(fileName)
 								noFSResults := []string{"", "unknown"}
 								contains := slices.Contains(noFSResults, partedResult)
 
@@ -456,12 +457,12 @@ func main() {
 
 								if contains {
 									part1Result = "Этап 1: Шифрования не обнаружено. Переход на Этап 2."
-									counter, total := createFileCounter(optimizedfname, blockSize)
-									ksStatistic, maxDiffPosition, readBytesCount, _, _ = ksTest(counter, total)
+									counter, total := test_suite.CreateFileCounter(optimizedfname, blockSize)
+									ksStatistic, maxDiffPosition, readBytesCount, _, _ = test_suite.KsTest(counter, total)
 
-									compressionStat = compressionTest(optimizedfname)
-									signatureStat = signatureAnalysis(optimizedfname, blockSize)
-									entropyStat = entropyEstimation(counter, total)
+									compressionStat = test_suite.CompressionTest(optimizedfname)
+									signatureStat = test_suite.SignatureAnalysis(optimizedfname, blockSize)
+									entropyStat = test_suite.EntropyEstimation(counter, total)
 
 									var autocorrTrue = autocorrResult <= autocorrThreshold
 									var ksTrue = ksStatistic <= ksTestThreshold
@@ -469,7 +470,7 @@ func main() {
 									var signatureTrue = signatureStat <= signatureThreshold
 									var entropyTrue = entropyStat >= entropyThreshold
 
-									var finalResult = countTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
+									var finalResult = test_suite.CountTrueBools(autocorrTrue, ksTrue, compressionTrue, signatureTrue, entropyTrue)
 
 									if finalResult <= 2 {
 										part2Result = fmt.Sprintf("Этап 2: Количество положительных результатов %d <= 2, шифрования не обнаружено. Завершение работы программы.", finalResult)
