@@ -1,4 +1,4 @@
-module github.com/Gilah-EnE/main
+module github.com/Gilah-EnE/dec24-go
 
 go 1.24.1
 
