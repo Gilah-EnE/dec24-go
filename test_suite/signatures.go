@@ -641,7 +641,7 @@ func SignatureAnalysis(fileName string, blockSize int) float64 {
 				fmt.Printf("%d, ", idx)
 			}
 
-			foundSignaturesTotal[sigType] += findBytesPattern(hexData, signatures[sigType])
+			foundSignaturesTotal[sigType] += FindBytesPattern(hexData, signatures[sigType])
 		}
 		fmt.Print("\r")
 	}
