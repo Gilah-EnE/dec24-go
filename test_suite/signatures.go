@@ -11,10 +11,8 @@ import (
 	"github.com/BurntSushi/rure-go"
 )
 
-// SignatureMap holds the mapping of file types to their regex patterns
 type SignatureMap map[string]*rure.Regex
 
-// findBytesPattern counts the number of matches in the given data
 func FindBytesPattern(data string, regex *rure.Regex) int {
 	matches := regex.FindAll(data)
 	// FindAll returns two positions for start and end for each match, we need only the start position
