@@ -3,8 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"github.com/Gilah-EnE/dec24-go/test_suite"
-	"github.com/mappu/miqt/qt"
 	"log"
 	"os"
 	"os/exec"
@@ -12,6 +10,9 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+
+	"github.com/Gilah-EnE/dec24-go/test_suite"
+	"github.com/mappu/miqt/qt"
 )
 
 const (
@@ -23,7 +24,7 @@ const (
 func main() {
 	qt.NewQApplication(os.Args)
 	window := qt.NewQMainWindow(nil)
-	window.SetWindowTitle("Код поиска шифрования разделов сырого образа диска, версия 3.1")
+	window.SetWindowTitle("Код поиска шифрования разделов сырого образа диска, версия 4")
 	window.SetMinimumSize2(800, 20)
 
 	// Adding menu actions
@@ -147,24 +148,30 @@ func main() {
 	entropyStatDisplay := qt.NewQLineEdit(widget)
 	entropyStatDisplay.SetReadOnly(true)
 
+	knownSuiteDisplay := qt.NewQLineEdit(widget)
+	knownSuiteDisplay.SetReadOnly(true)
+
 	// Placing them in grid with their respecting labels
-	resultsLayout.AddWidget2(qt.NewQLabel3("Автокорреляция").QWidget, 1, 0)
-	resultsLayout.AddWidget2(autoCorrResultDisplay.QWidget, 1, 1)
+	resultsLayout.AddWidget2(qt.NewQLabel3("Известные утилиты").QWidget, 1, 0)
+	resultsLayout.AddWidget2(knownSuiteDisplay.QWidget, 1, 1)
 
-	resultsLayout.AddWidget2(qt.NewQLabel3("Поиск ФС").QWidget, 2, 0)
-	resultsLayout.AddWidget2(fsResultDisplay.QWidget, 2, 1)
+	resultsLayout.AddWidget2(qt.NewQLabel3("Автокорреляция").QWidget, 2, 0)
+	resultsLayout.AddWidget2(autoCorrResultDisplay.QWidget, 2, 1)
 
-	resultsLayout.AddWidget2(qt.NewQLabel3("Колмогоров-Смирнов").QWidget, 3, 0)
-	resultsLayout.AddWidget2(ksResultDisplay.QWidget, 3, 1)
+	resultsLayout.AddWidget2(qt.NewQLabel3("Поиск ФС").QWidget, 3, 0)
+	resultsLayout.AddWidget2(fsResultDisplay.QWidget, 3, 1)
 
-	resultsLayout.AddWidget2(qt.NewQLabel3("Компрессия").QWidget, 4, 0)
-	resultsLayout.AddWidget2(compressionStatDisplay.QWidget, 4, 1)
+	resultsLayout.AddWidget2(qt.NewQLabel3("Колмогоров-Смирнов").QWidget, 4, 0)
+	resultsLayout.AddWidget2(ksResultDisplay.QWidget, 4, 1)
 
-	resultsLayout.AddWidget2(qt.NewQLabel3("Поиск сигнатур").QWidget, 5, 0)
-	resultsLayout.AddWidget2(sigResultDisplay.QWidget, 5, 1)
+	resultsLayout.AddWidget2(qt.NewQLabel3("Компрессия").QWidget, 5, 0)
+	resultsLayout.AddWidget2(compressionStatDisplay.QWidget, 5, 1)
 
-	resultsLayout.AddWidget2(qt.NewQLabel3("Оценка энтропии").QWidget, 6, 0)
-	resultsLayout.AddWidget2(entropyStatDisplay.QWidget, 6, 1)
+	resultsLayout.AddWidget2(qt.NewQLabel3("Поиск сигнатур").QWidget, 6, 0)
+	resultsLayout.AddWidget2(sigResultDisplay.QWidget, 6, 1)
+
+	resultsLayout.AddWidget2(qt.NewQLabel3("Оценка энтропии").QWidget, 7, 0)
+	resultsLayout.AddWidget2(entropyStatDisplay.QWidget, 7, 1)
 
 	// Combining sublayouts into the main layout
 	mainLayout.AddLayout(filePickerLayout.QLayout)
@@ -255,13 +262,20 @@ func main() {
 				var ksStatistic, compressionStat, signatureStat, entropyStat float64
 				var maxDiffPosition, readBytesCount int
 
+				knownSuiteData := test_suite.ToolDetection(fileName, blockSize, true)
+				knownSuiteResult := test_suite.SumFoundSignaturesTotal(knownSuiteData)
 				autocorrResult := test_suite.AutoCorrelation(optimizedfname, blockSize)
 				partedResult := test_suite.PartedCheck(fileName)
 				noFSResults := []string{"", "unknown"}
 				contains := slices.Contains(noFSResults, partedResult)
 				var encryptionResult = NoEncryption
 
-				if contains {
+				if knownSuiteResult > 0 {
+					part1Result = fmt.Sprintf("Этап 1: Обнаружено %d сигнатур, характерных для известных утилит полнодискового шифрования. Завершение работы программы.", knownSuiteResult)
+					encryptionResult = FullDiskEncryption
+				}
+
+				if contains && knownSuiteResult == 0 {
 					part1Result = "Этап 1: Шифрования не обнаружено. Переход на Этап 2."
 					counter, total := test_suite.CreateFileCounter(optimizedfname, blockSize)
 					ksStatistic, maxDiffPosition, readBytesCount, _, _ = test_suite.KsTest(counter, total)
@@ -298,51 +312,63 @@ func main() {
 					}
 				}
 
-				welcomeText := fmt.Sprintf("Код поиска шифрования разделов сырого образа диска, версия 3.1. Имя файла: %s, размер блока: %d байтов.\n", fileName, blockSize)
+				welcomeText := fmt.Sprintf("Код поиска шифрования разделов сырого образа диска, версия 4.0. Имя файла: %s, размер блока: %d байтов.\n", fileName, blockSize)
 				logWindow.Append(welcomeText)
 				fileNormalLogger.Println(welcomeText)
 
-				autocorrLogText := fmt.Sprintf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
-				logWindow.Append(autocorrLogText)
-				fileNormalLogger.Print(autocorrLogText)
-				autoCorrResultDisplay.SetText(strconv.FormatFloat(autocorrResult, 'f', -1, 64))
-
-				fsLogText := fmt.Sprintf("Обнаруженная файловая система: %s\n", partedResult)
-				logWindow.Append(fsLogText)
-				fileNormalLogger.Print(fsLogText)
-				fsResultDisplay.SetText(partedResult)
-
-				noFSResults = []string{"", "unknown"}
-				contains = slices.Contains(noFSResults, partedResult)
-
-				if contains {
-					logWindow.Append(part1Result)
-					fileNormalLogger.Println(part1Result)
-					ksLogText := fmt.Sprintf("Тест Колмогорова-Смирнова: максимальное отклонение: %f (реф. значение %f) в позиции %d, прочитано %d байтов.\n", ksStatistic, ksTestThreshold, maxDiffPosition, readBytesCount)
-					logWindow.Append(ksLogText)
-					fileNormalLogger.Print(ksLogText)
-					ksResultDisplay.SetText(strconv.FormatFloat(ksStatistic, 'f', -1, 64))
-
-					compLogText := fmt.Sprintf("Средний коэффициент сжатия: %f, реф. значение %f\n", compressionStat, compressionThreshold)
-					logWindow.Append(compLogText)
-					fileNormalLogger.Print(compLogText)
-					compressionStatDisplay.SetText(strconv.FormatFloat(compressionStat, 'f', -1, 64))
-
-					sigLogText := fmt.Sprintf("Удельное количество сигнатур на мегабайт: %f, реф. значение %f\n", signatureStat, signatureThreshold)
-					logWindow.Append(sigLogText)
-					fileNormalLogger.Print(sigLogText)
-					sigResultDisplay.SetText(strconv.FormatFloat(signatureStat, 'f', -1, 64))
-
-					entropyLogText := fmt.Sprintf("Оценочная информационная энтропия файла: %f, реф. значение %f\n", entropyStat, entropyThreshold)
-					logWindow.Append(entropyLogText)
-					fileNormalLogger.Print(entropyLogText)
-					entropyStatDisplay.SetText(strconv.FormatFloat(entropyStat, 'f', -1, 64))
-					logWindow.Append(part2Result)
-					fileNormalLogger.Print(part2Result)
+				if knownSuiteResult > 0 {
+					knownSuiteLogText := fmt.Sprintf("Обнаружены сигнатуры известных утилит полнодискового шифрования: %s. Завершение работы программы.", test_suite.FoundSignaturesTotalToReadable(knownSuiteData))
+					logWindow.Append(knownSuiteLogText)
+					fileNormalLogger.Print(knownSuiteLogText)
 				} else {
-					logWindow.Append(part1Result)
-					fileNormalLogger.Print(part1Result)
+					autocorrLogText := fmt.Sprintf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
+					logWindow.Append(autocorrLogText)
+					fileNormalLogger.Print(autocorrLogText)
+					autoCorrResultDisplay.SetText(strconv.FormatFloat(autocorrResult, 'f', -1, 64))
+
+					fsLogText := fmt.Sprintf("Обнаруженная файловая система: %s\n", partedResult)
+					logWindow.Append(fsLogText)
+					fileNormalLogger.Print(fsLogText)
+					fsResultDisplay.SetText(partedResult)
+
+					noFSResults = []string{"", "unknown"}
+					contains = slices.Contains(noFSResults, partedResult)
+
+					if contains {
+						logWindow.Append(part1Result)
+						fileNormalLogger.Println(part1Result)
+						ksLogText := fmt.Sprintf("Тест Колмогорова-Смирнова: максимальное отклонение: %f (реф. значение %f) в позиции %d, прочитано %d байтов.\n", ksStatistic, ksTestThreshold, maxDiffPosition, readBytesCount)
+						logWindow.Append(ksLogText)
+						fileNormalLogger.Print(ksLogText)
+						ksResultDisplay.SetText(strconv.FormatFloat(ksStatistic, 'f', -1, 64))
+
+						compLogText := fmt.Sprintf("Средний коэффициент сжатия: %f, реф. значение %f\n", compressionStat, compressionThreshold)
+						logWindow.Append(compLogText)
+						fileNormalLogger.Print(compLogText)
+						compressionStatDisplay.SetText(strconv.FormatFloat(compressionStat, 'f', -1, 64))
+
+						sigLogText := fmt.Sprintf("Удельное количество сигнатур на мегабайт: %f, реф. значение %f\n", signatureStat, signatureThreshold)
+						logWindow.Append(sigLogText)
+						fileNormalLogger.Print(sigLogText)
+						sigResultDisplay.SetText(strconv.FormatFloat(signatureStat, 'f', -1, 64))
+
+						entropyLogText := fmt.Sprintf("Оценочная информационная энтропия файла: %f, реф. значение %f\n", entropyStat, entropyThreshold)
+						logWindow.Append(entropyLogText)
+						fileNormalLogger.Print(entropyLogText)
+						entropyStatDisplay.SetText(strconv.FormatFloat(entropyStat, 'f', -1, 64))
+						logWindow.Append(part2Result)
+						fileNormalLogger.Print(part2Result)
+					} else {
+						logWindow.Append(part1Result)
+						fileNormalLogger.Print(part1Result)
+					}
 				}
+
+				logCloseErr := logFileHandle.Close()
+				if logCloseErr != nil {
+					fmt.Printf("Не удалось закрыть файл журнала: %s", logCloseErr)
+				}
+
 				fullEncryptedDirPath := filepath.Join(outputDir, "encrypted", "full_encryption")
 				fileEncryptedDirPath := filepath.Join(outputDir, "encrypted", "file_encryption")
 
@@ -448,6 +474,8 @@ func main() {
 								var ksStatistic, compressionStat, signatureStat, entropyStat float64
 								var maxDiffPosition, readBytesCount int
 
+								knownSuiteData := test_suite.ToolDetection(fileName, blockSize, true)
+								knownSuiteResult := test_suite.SumFoundSignaturesTotal(knownSuiteData)
 								autocorrResult := test_suite.AutoCorrelation(optimizedfname, blockSize)
 								partedResult := test_suite.PartedCheck(fileName)
 								noFSResults := []string{"", "unknown"}
@@ -455,7 +483,12 @@ func main() {
 
 								var encryptionResult = NoEncryption
 
-								if contains {
+								if knownSuiteResult > 0 {
+									part1Result = fmt.Sprintf("Этап 1: Обнаружено %d сигнатур, характерных для известных утилит полнодискового шифрования. Завершение работы программы.", knownSuiteResult)
+									encryptionResult = FullDiskEncryption
+								}
+
+								if contains && knownSuiteResult == 0 {
 									part1Result = "Этап 1: Шифрования не обнаружено. Переход на Этап 2."
 									counter, total := test_suite.CreateFileCounter(optimizedfname, blockSize)
 									ksStatistic, maxDiffPosition, readBytesCount, _, _ = test_suite.KsTest(counter, total)
@@ -492,50 +525,57 @@ func main() {
 									}
 								}
 
-								welcomeText := fmt.Sprintf("Код поиска шифрования разделов сырого образа диска, версия 3.1. Имя файла: %s, размер блока: %d байтов.\n", fname, blockSize)
+								welcomeText := fmt.Sprintf("Код поиска шифрования разделов сырого образа диска, версия 4.0. Имя файла: %s, размер блока: %d байтов.\n", fname, blockSize)
 								logWindow.Append(welcomeText)
 								fileNormalLogger.Println(welcomeText)
 
-								autocorrLogText := fmt.Sprintf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
-								logWindow.Append(autocorrLogText)
-								fileNormalLogger.Print(autocorrLogText)
-								autoCorrResultDisplay.SetText(strconv.FormatFloat(autocorrResult, 'f', -1, 64))
-
-								fsLogText := fmt.Sprintf("Обнаруженная файловая система: %s\n", partedResult)
-								logWindow.Append(fsLogText)
-								fileNormalLogger.Print(fsLogText)
-								fsResultDisplay.SetText(partedResult)
-
-								noFSResults = []string{"", "unknown"}
-								contains = slices.Contains(noFSResults, partedResult)
-
-								if contains {
-									logWindow.Append(part1Result)
-									fileNormalLogger.Println(part1Result)
-									ksLogText := fmt.Sprintf("Тест Колмогорова-Смирнова: максимальное отклонение: %f (реф. значение %f) в позиции %d, прочитано %d байтов.\n", ksStatistic, ksTestThreshold, maxDiffPosition, readBytesCount)
-									logWindow.Append(ksLogText)
-									fileNormalLogger.Print(ksLogText)
-									ksResultDisplay.SetText(strconv.FormatFloat(ksStatistic, 'f', -1, 64))
-
-									compLogText := fmt.Sprintf("Средний коэффициент сжатия: %f, реф. значение %f\n", compressionStat, compressionThreshold)
-									logWindow.Append(compLogText)
-									fileNormalLogger.Print(compLogText)
-									compressionStatDisplay.SetText(strconv.FormatFloat(compressionStat, 'f', -1, 64))
-
-									sigLogText := fmt.Sprintf("Удельное количество сигнатур на мегабайт: %f, реф. значение %f\n", signatureStat, signatureThreshold)
-									logWindow.Append(sigLogText)
-									fileNormalLogger.Print(sigLogText)
-									sigResultDisplay.SetText(strconv.FormatFloat(signatureStat, 'f', -1, 64))
-
-									entropyLogText := fmt.Sprintf("Оценочная информационная энтропия файла: %f, реф. значение %f\n", entropyStat, entropyThreshold)
-									logWindow.Append(entropyLogText)
-									fileNormalLogger.Print(entropyLogText)
-									entropyStatDisplay.SetText(strconv.FormatFloat(entropyStat, 'f', -1, 64))
-									logWindow.Append(part2Result)
-									fileNormalLogger.Print(part2Result)
+								if knownSuiteResult > 0 {
+									knownSuiteLogText := fmt.Sprintf("Обнаружены сигнатуры известных утилит полнодискового шифрования: %s. Завершение работы программы.", test_suite.FoundSignaturesTotalToReadable(knownSuiteData))
+									logWindow.Append(knownSuiteLogText)
+									fileNormalLogger.Print(knownSuiteLogText)
 								} else {
-									logWindow.Append(part1Result)
-									fileNormalLogger.Print(part1Result)
+
+									autocorrLogText := fmt.Sprintf("Коэффициент автокорреляции: %f, реф. значение %f\n", autocorrResult, autocorrThreshold)
+									logWindow.Append(autocorrLogText)
+									fileNormalLogger.Print(autocorrLogText)
+									autoCorrResultDisplay.SetText(strconv.FormatFloat(autocorrResult, 'f', -1, 64))
+
+									fsLogText := fmt.Sprintf("Обнаруженная файловая система: %s\n", partedResult)
+									logWindow.Append(fsLogText)
+									fileNormalLogger.Print(fsLogText)
+									fsResultDisplay.SetText(partedResult)
+
+									noFSResults = []string{"", "unknown"}
+									contains = slices.Contains(noFSResults, partedResult)
+
+									if contains {
+										logWindow.Append(part1Result)
+										fileNormalLogger.Println(part1Result)
+										ksLogText := fmt.Sprintf("Тест Колмогорова-Смирнова: максимальное отклонение: %f (реф. значение %f) в позиции %d, прочитано %d байтов.\n", ksStatistic, ksTestThreshold, maxDiffPosition, readBytesCount)
+										logWindow.Append(ksLogText)
+										fileNormalLogger.Print(ksLogText)
+										ksResultDisplay.SetText(strconv.FormatFloat(ksStatistic, 'f', -1, 64))
+
+										compLogText := fmt.Sprintf("Средний коэффициент сжатия: %f, реф. значение %f\n", compressionStat, compressionThreshold)
+										logWindow.Append(compLogText)
+										fileNormalLogger.Print(compLogText)
+										compressionStatDisplay.SetText(strconv.FormatFloat(compressionStat, 'f', -1, 64))
+
+										sigLogText := fmt.Sprintf("Удельное количество сигнатур на мегабайт: %f, реф. значение %f\n", signatureStat, signatureThreshold)
+										logWindow.Append(sigLogText)
+										fileNormalLogger.Print(sigLogText)
+										sigResultDisplay.SetText(strconv.FormatFloat(signatureStat, 'f', -1, 64))
+
+										entropyLogText := fmt.Sprintf("Оценочная информационная энтропия файла: %f, реф. значение %f\n", entropyStat, entropyThreshold)
+										logWindow.Append(entropyLogText)
+										fileNormalLogger.Print(entropyLogText)
+										entropyStatDisplay.SetText(strconv.FormatFloat(entropyStat, 'f', -1, 64))
+										logWindow.Append(part2Result)
+										fileNormalLogger.Print(part2Result)
+									} else {
+										logWindow.Append(part1Result)
+										fileNormalLogger.Print(part1Result)
+									}
 								}
 								logCloseErr := logFileHandle.Close()
 								if logCloseErr != nil {
