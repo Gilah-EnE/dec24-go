@@ -24,7 +24,7 @@ const (
 func main() {
 	qt.NewQApplication(os.Args)
 	window := qt.NewQMainWindow(nil)
-	window.SetWindowTitle("Код поиска шифрования разделов сырого образа диска, версия 4")
+	window.SetWindowTitle("Код поиска шифрования разделов сырого образа диска, версия 4.1")
 	window.SetMinimumSize2(800, 20)
 
 	// Adding menu actions
@@ -99,6 +99,9 @@ func main() {
 	})
 	startButton := qt.NewQPushButton4(qt.QIcon_FromTheme("media-playback-start"), "Анализ")
 
+	moveFlagSelector := qt.NewQCheckBox4("Перемещать зашифрованные файлы в отдельный каталог", widget)
+	moveFlagSelector.SetChecked(true)
+
 	encryptedFileLocationEdit := qt.NewQLineEdit(widget)
 	encryptedFileLocationEdit.SetPlaceholderText("Введите путь, куда будут перемещены зашифрованные файлы")
 	cwd, getCwdErr := os.Getwd()
@@ -107,6 +110,16 @@ func main() {
 	}
 	encryptedFileLocationEdit.SetText(cwd)
 	encryptedFileLocationPickerButton := qt.NewQPushButton4(qt.QIcon_FromTheme("folder-open"), "Выбор каталога")
+
+	moveFlagSelector.OnStateChanged(func(state int) {
+		if state == int(2) || state == int(1) {
+			encryptedFileLocationEdit.SetEnabled(true)
+			encryptedFileLocationPickerButton.SetEnabled(true)
+		} else if state == int(0) {
+			encryptedFileLocationEdit.SetEnabled(false)
+			encryptedFileLocationPickerButton.SetEnabled(false)
+		}
+	})
 
 	encryptedFileLocationPickerButton.OnClicked(func() {
 		caption := "Выберите каталог для сохранения зашифрованных файлов"
@@ -126,8 +139,9 @@ func main() {
 	filePickerLayout.AddWidget2(fileNameTextField.QWidget, 0, 0)
 	filePickerLayout.AddWidget2(filePickerButton.QWidget, 0, 1)
 	filePickerLayout.AddWidget2(startButton.QWidget, 0, 2)
-	filePickerLayout.AddWidget3(encryptedFileLocationEdit.QWidget, 1, 0, 1, 2)
-	filePickerLayout.AddWidget2(encryptedFileLocationPickerButton.QWidget, 1, 2)
+	filePickerLayout.AddWidget2(moveFlagSelector.QWidget, 1, 0)
+	filePickerLayout.AddWidget3(encryptedFileLocationEdit.QWidget, 2, 0, 1, 2)
+	filePickerLayout.AddWidget2(encryptedFileLocationPickerButton.QWidget, 2, 2)
 
 	// Values display widgets
 	autoCorrResultDisplay := qt.NewQLineEdit(widget)
@@ -190,8 +204,9 @@ func main() {
 		outputDir := encryptedFileLocationEdit.Text()
 
 		if fileName == "" || outputDir == "" {
-			errorWindow := qt.NewQErrorMessage(widget)
-			errorWindow.ShowMessage("Путь к исследуемому файлу/каталогу или к каталогу перемещения пуст.")
+			wrongPathWarningWindow := qt.NewQMessageBox3(qt.QMessageBox__Critical, "Ошибка", "Путь к исследуемому файлу/каталогу или к каталогу перемещения пуст. Проверьте правильность введения пути и повторите попытку.")
+			wrongPathWarningWindow.SetStandardButtons(qt.QMessageBox__Ok)
+			wrongPathWarningWindow.Exec()
 			return
 		}
 
@@ -258,6 +273,29 @@ func main() {
 				var signatureThreshold = 150.0
 				var entropyThreshold = 7.95
 
+				var compressionExecutables = []string{"pigz", "lz4", "lbzip2", "pixz", "zstd"}
+				var compressionExecutableFindResults = make(map[string]bool)
+				var missingExecutables string
+
+				for _, executable := range compressionExecutables {
+					if _, err := exec.LookPath(executable); err != nil {
+						compressionExecutableFindResults[executable] = false
+					}
+				}
+
+				for executable, found := range compressionExecutableFindResults {
+					if !found {
+						missingExecutables += fmt.Sprintf(" %s", executable)
+					}
+				}
+
+				if missingExecutables != "" {
+					warningWindow := qt.NewQMessageBox3(qt.QMessageBox__Critical, "Ошибка", fmt.Sprintf("Исполняемые файлы%s не найдены в PATH. Тест компрессии будет работать некорректно. Выполнение проверки остановлено.", missingExecutables))
+					warningWindow.SetStandardButtons(qt.QMessageBox__Ok)
+					warningWindow.Exec()
+					return // Возможно, стоит не прерывать выполнение, а просто логировать предупреждение и продолжать, но так как тест компрессии является важной частью анализа, было решено прервать выполнение.
+				}
+
 				var part1Result, part2Result string
 				var ksStatistic, compressionStat, signatureStat, entropyStat float64
 				var maxDiffPosition, readBytesCount int
@@ -312,12 +350,15 @@ func main() {
 					}
 				}
 
-				welcomeText := fmt.Sprintf("Код поиска шифрования разделов сырого образа диска, версия 4.0. Имя файла: %s, размер блока: %d байтов.\n", fileName, blockSize)
+				welcomeText := fmt.Sprintf("Код поиска шифрования разделов сырого образа диска, версия 4.1. Имя файла: %s, размер блока: %d байтов.\n", fileName, blockSize)
 				logWindow.Append(welcomeText)
 				fileNormalLogger.Println(welcomeText)
 
+				knownSuiteReadable := test_suite.FoundSignaturesTotalToReadable(knownSuiteData)
+				knownSuiteDisplay.SetText(knownSuiteReadable)
+
 				if knownSuiteResult > 0 {
-					knownSuiteLogText := fmt.Sprintf("Обнаружены сигнатуры известных утилит полнодискового шифрования: %s. Завершение работы программы.", test_suite.FoundSignaturesTotalToReadable(knownSuiteData))
+					knownSuiteLogText := fmt.Sprintf("Обнаружены сигнатуры известных утилит полнодискового шифрования: %s. Завершение работы программы.", knownSuiteReadable)
 					logWindow.Append(knownSuiteLogText)
 					fileNormalLogger.Print(knownSuiteLogText)
 				} else {
@@ -364,32 +405,29 @@ func main() {
 					}
 				}
 
-				logCloseErr := logFileHandle.Close()
-				if logCloseErr != nil {
-					fmt.Printf("Не удалось закрыть файл журнала: %s", logCloseErr)
-				}
+				if moveFlagSelector.IsChecked() == true {
+					fullEncryptedDirPath := filepath.Join(outputDir, "encrypted", "full_encryption")
+					fileEncryptedDirPath := filepath.Join(outputDir, "encrypted", "file_encryption")
 
-				fullEncryptedDirPath := filepath.Join(outputDir, "encrypted", "full_encryption")
-				fileEncryptedDirPath := filepath.Join(outputDir, "encrypted", "file_encryption")
-
-				fullEncryptedDirPathErr := os.MkdirAll(fullEncryptedDirPath, os.ModePerm)
-				if fullEncryptedDirPathErr != nil {
-					log.Fatal(fullEncryptedDirPathErr)
-				}
-				fileEncryptedDirPathErr := os.MkdirAll(fileEncryptedDirPath, os.ModePerm)
-				if fileEncryptedDirPathErr != nil {
-					log.Fatal(fileEncryptedDirPathErr)
-				}
-
-				if encryptionResult == FileBasedEncryption {
-					fileMoveErr := os.Rename(fileName, filepath.Join(fileEncryptedDirPath, filepath.Base(fileName)))
-					if fileMoveErr != nil {
-						log.Fatal(fileMoveErr)
+					fullEncryptedDirPathErr := os.MkdirAll(fullEncryptedDirPath, os.ModePerm)
+					if fullEncryptedDirPathErr != nil {
+						log.Fatal(fullEncryptedDirPathErr)
 					}
-				} else if encryptionResult == FullDiskEncryption {
-					fileMoveErr := os.Rename(fileName, filepath.Join(fullEncryptedDirPath, filepath.Base(fileName)))
-					if fileMoveErr != nil {
-						log.Fatal(fileMoveErr)
+					fileEncryptedDirPathErr := os.MkdirAll(fileEncryptedDirPath, os.ModePerm)
+					if fileEncryptedDirPathErr != nil {
+						log.Fatal(fileEncryptedDirPathErr)
+					}
+
+					if encryptionResult == FileBasedEncryption {
+						fileMoveErr := os.Rename(fileName, filepath.Join(fileEncryptedDirPath, filepath.Base(fileName)))
+						if fileMoveErr != nil {
+							log.Fatal(fileMoveErr)
+						}
+					} else if encryptionResult == FullDiskEncryption {
+						fileMoveErr := os.Rename(fileName, filepath.Join(fullEncryptedDirPath, filepath.Base(fileName)))
+						if fileMoveErr != nil {
+							log.Fatal(fileMoveErr)
+						}
 					}
 				}
 			}
@@ -474,6 +512,14 @@ func main() {
 								var ksStatistic, compressionStat, signatureStat, entropyStat float64
 								var maxDiffPosition, readBytesCount int
 
+								var compressionExecutables = []string{"pigz", "lz4", "lbzip2", "pixz", "zstd"}
+								for _, executable := range compressionExecutables {
+									if _, err := exec.LookPath(executable); err != nil {
+										log.Printf("Предупреждение: исполняемый файл %s не найден в PATH. Тест компрессии может работать некорректно.", executable)
+										return
+									}
+								}
+
 								knownSuiteData := test_suite.ToolDetection(fileName, blockSize, true)
 								knownSuiteResult := test_suite.SumFoundSignaturesTotal(knownSuiteData)
 								autocorrResult := test_suite.AutoCorrelation(optimizedfname, blockSize)
@@ -525,12 +571,15 @@ func main() {
 									}
 								}
 
-								welcomeText := fmt.Sprintf("Код поиска шифрования разделов сырого образа диска, версия 4.0. Имя файла: %s, размер блока: %d байтов.\n", fname, blockSize)
+								welcomeText := fmt.Sprintf("Код поиска шифрования разделов сырого образа диска, версия 4.1. Имя файла: %s, размер блока: %d байтов.\n", fname, blockSize)
 								logWindow.Append(welcomeText)
 								fileNormalLogger.Println(welcomeText)
 
+								knownSuiteReadable := test_suite.FoundSignaturesTotalToReadable(knownSuiteData)
+								knownSuiteDisplay.SetText(knownSuiteReadable)
+
 								if knownSuiteResult > 0 {
-									knownSuiteLogText := fmt.Sprintf("Обнаружены сигнатуры известных утилит полнодискового шифрования: %s. Завершение работы программы.", test_suite.FoundSignaturesTotalToReadable(knownSuiteData))
+									knownSuiteLogText := fmt.Sprintf("Обнаружены сигнатуры известных утилит полнодискового шифрования: %s. Завершение работы программы.", knownSuiteReadable)
 									logWindow.Append(knownSuiteLogText)
 									fileNormalLogger.Print(knownSuiteLogText)
 								} else {
@@ -582,30 +631,31 @@ func main() {
 									fmt.Printf("Не удалось закрыть файл журнала: %s", logCloseErr)
 								}
 
-								fullEncryptedDirPath := filepath.Join(outputDir, "encrypted", "full_encryption")
-								fileEncryptedDirPath := filepath.Join(outputDir, "encrypted", "file_encryption")
+								if moveFlagSelector.IsChecked() == true {
+									fullEncryptedDirPath := filepath.Join(outputDir, "encrypted", "full_encryption")
+									fileEncryptedDirPath := filepath.Join(outputDir, "encrypted", "file_encryption")
 
-								fullEncryptedDirPathErr := os.MkdirAll(fullEncryptedDirPath, os.ModePerm)
-								if fullEncryptedDirPathErr != nil {
-									log.Fatal(fullEncryptedDirPathErr)
-								}
-								fileEncryptedDirPathErr := os.MkdirAll(fileEncryptedDirPath, os.ModePerm)
-								if fileEncryptedDirPathErr != nil {
-									log.Fatal(fileEncryptedDirPathErr)
-								}
-
-								if encryptionResult == FileBasedEncryption {
-									fileMoveErr := os.Rename(fileName, filepath.Join(fileEncryptedDirPath, filepath.Base(fileName)))
-									if fileMoveErr != nil {
-										log.Fatal(fileMoveErr)
+									fullEncryptedDirPathErr := os.MkdirAll(fullEncryptedDirPath, os.ModePerm)
+									if fullEncryptedDirPathErr != nil {
+										log.Fatal(fullEncryptedDirPathErr)
 									}
-								} else if encryptionResult == FullDiskEncryption {
-									fileMoveErr := os.Rename(fileName, filepath.Join(fullEncryptedDirPath, filepath.Base(fileName)))
-									if fileMoveErr != nil {
-										log.Fatal(fileMoveErr)
+									fileEncryptedDirPathErr := os.MkdirAll(fileEncryptedDirPath, os.ModePerm)
+									if fileEncryptedDirPathErr != nil {
+										log.Fatal(fileEncryptedDirPathErr)
+									}
+
+									if encryptionResult == FileBasedEncryption {
+										fileMoveErr := os.Rename(fileName, filepath.Join(fileEncryptedDirPath, filepath.Base(fileName)))
+										if fileMoveErr != nil {
+											log.Fatal(fileMoveErr)
+										}
+									} else if encryptionResult == FullDiskEncryption {
+										fileMoveErr := os.Rename(fileName, filepath.Join(fullEncryptedDirPath, filepath.Base(fileName)))
+										if fileMoveErr != nil {
+											log.Fatal(fileMoveErr)
+										}
 									}
 								}
-
 							}
 						}
 					}

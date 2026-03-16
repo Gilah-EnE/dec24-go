@@ -134,6 +134,9 @@ fabric.properties
 # End of https://www.toptal.com/developers/gitignore/api/visualstudiocode,goland+all,go
 
 main
+gui
 *_signatures_total.txt
+*.enclog
+*suitedetection.log
 *.img
 *.pyc

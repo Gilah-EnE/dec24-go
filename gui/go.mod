@@ -4,7 +4,7 @@ go 1.24.4
 
 require github.com/mappu/miqt v0.11.0
 
-require github.com/Gilah-EnE/dec24-go/test_suite v0.0.0-20250624210720-ff252135dd53
+require github.com/Gilah-EnE/dec24-go/test_suite v0.0.0-20260314075705-6dbd6b8516b6
 
 require (
 	github.com/BurntSushi/rure-go v0.0.0-20231211185014-8a0f52724b91 // indirect

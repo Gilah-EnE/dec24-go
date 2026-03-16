@@ -6,6 +6,7 @@ import (
 	"log"
 	"math"
 	"os"
+	"strings"
 
 	"github.com/BurntSushi/rure-go"
 )
@@ -21,11 +22,11 @@ type AdvancedSignatureMap struct {
 }
 
 func FoundSignaturesTotalToReadable(foundSignaturesTotal map[string]int) string {
-	var readable string
+	var readables []string
 	for key, value := range foundSignaturesTotal {
-		readable = readable + fmt.Sprintf("%s - %d, ", key, value)
+		readables = append(readables, fmt.Sprintf("%s - %d, ", key, value))
 	}
-	return readable
+	return strings.Join(readables, ", ")
 }
 
 func SumFoundSignaturesTotal(foundSignaturesTotal map[string]int) int {
@@ -162,7 +163,5 @@ func ToolDetection(fileName string, blockSize int, hailMaryMode bool) map[string
 	for key, value := range foundSignaturesTotal {
 		fileLogWriter.Printf("Сигнатура: %s - найдено %d вхождений.\n", key, value)
 	}
-
-	fmt.Println(foundSignaturesTotalToReadable(foundSignaturesTotal))
 	return foundSignaturesTotal
 }
